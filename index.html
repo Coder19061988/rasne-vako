@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>3PL Rasne API — Документація</title>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/redoc/bundles/redoc.standalone.js"></script>
+    <style>
+        /* Темний стиль для таблиць у документації (опис полів номенклатури, одиниць виміру, штрихкодів) */
+        #redoc-container table {
+            background: #252525;
+            border-collapse: collapse;
+            border: 1px solid #444;
+            border-radius: 15px;
+        }
+        #redoc-container th,
+        #redoc-container td {
+            border: 1px solid #444 !important;
+            padding: 8px 12px !important;
+        }
+        #redoc-container th {
+            background: #1a1a1a !important;
+            color: #fff !important;
+            font-weight: 600;
+        }
+        #redoc-container td {
+            color: #e4e4e4 !important;
+            background: #252525 !important;
+        }
+        #redoc-container tr:hover td {
+            background: #2d2d2d;
+        }
+    </style>
+</head>
+<body>
+    <div id="redoc-container"></div>
+    <script>
+(function () {
+    // ---------- Base URL API (одне місце для зміни) ----------
+    var URL_DEV  = "https://wms.bhb.org.ua/rasne-dev/hs/3plrasneapi";
+    var URL_PROD = "https://тут.буде.сервер/rasne-prod/hs/3plrasneapi";
+
+    var spec = {
+        "openapi": "3.0.3",
+        // ---------- Загальна інформація API ----------
+        "info": {
+            "title": "API: Vako ↔ Rasne",
+            "version": "1.0"
+        },
+        // ---------- Список серверів (Base URL) ----------
+        "servers": [
+            { "url": URL_DEV,
+              "description": "Сервер API (DEV)" },
+            { "url": URL_PROD,
+              "description": "Сервер API (PROD)" }
+        ],
+        // ---------- Теги: опис блоків (Аутентифікація, Обмін даними) ----------
+        "tags": [
+            { "name": "Аутентифікація", "description": "**Авторизація**\n\n- **Base URL:** " + URL_DEV + "\n- **HTTP Basic Auth:** — логін і пароль (кодування Base64).\n- **Токен доступу** — у заголовку `X-Auth-Token`.\n\n**Приклад HTTP-заголовків:**\n- `Content-Type: application/json`\n- `Authorization: Basic <base64(логін:пароль)>`\n- `X-Auth-Token: <токен>`\n\n**Перевірка доступності:** запит GET /ping (авторизація не потрібна), у відповідь — рядок `pong`." },
+            { "name": "Обмін даними", "description": "**Загальне правило передачі посилальних типів**\n\nЯкщо в JSON передаються дані посилального типу (довідники, документи і .т.д.), вони завжди передаються у вигляді об'єкта з двома обов'язковими полями — тип і ідентифікатор.\n\nФормат єдиний для всіх посилальних реквізитів:\n\n```\n\"id\": {\n  \"ТипЗнчачения\": \"Справочник.Номенклатура\",\n  \"Значение\": \"7105fbe4-990e-11f0-a2aa-00505685ce63\"\n}\n```\n\n**де:**\n- **ТипЗнчачения** — повний тип посилання в 1С (наприклад: Справочник.Номенклатура, Справочник.ЕдиницыИзмерения, Справочник.ВидыНоменклатуры, Справочник.ХарактеристикиНоменклатуры);\n- **Значение** — GUID елемента відповідного довідника.\n\nЯкщо посилальний реквізит не заповнений, дозволено передавати порожній рядок:\n\n`\"НоменклатураГТД\": \"\"`" }
+        ],
+        // ---------- Ендпоінти (paths) ----------
+        "paths": {
+            // --- GET /ping: перевірка доступності (тег Аутентифікація) ---
+            "/ping": {
+                "get": {
+                    "tags": ["Аутентифікація"],
+                    "summary": "GET /ping — Перевірка доступності",
+                    "description": "Повертає рядок `pong`, якщо сервіс доступний. Авторизація не потрібна.\n\n**Відповідь:** HTTP 200, тіло: `pong` (text/plain).",
+                    "operationId": "getMessage",
+                    "responses": {
+                        "200": {
+                            "description": "Сервіс доступний",
+                            "content": {
+                                "text/plain": { "schema": { "type": "string", "example": "pong" } }
+                            }
+                        }
+                    }
+                }
+            },
+            // --- POST /v1: Номенклатура (goods) ---
+            "/v1": {
+                "post": {
+                    "tags": ["Обмін даними"],
+                    "summary": "POST /v1 — Номенклатура",
+                    "description": "Тіло запиту — об'єкт з ключем `goods` (масив елементів номенклатури).\n\n**Об'єкт обміну:** номенклатура (тег `goods`). Справочник.Номенклатура.\n\n**Опис полів:**\n\n| JSON-поле | Реквізит 1С | Тип | Опис |\n|-----------|-------------|-----|------|\n| id | Ссылка | Object | Посилання на елемент довідника Номенклатура |\n| name | Наименование | String | Найменування номенклатури |\n| code | Код | String | Код номенклатури |\n| is_group | ЭтоГруппа | Boolean | true — група, false — елемент |\n| ПометкаУдаления | ПометкаУдаления | Boolean | Ознака видалення |\n| group_id | Родитель | Object | Батьківська група (для кореня — 00000000-0000-0000-0000-000000000000) |\n| unit_for_reporting | ЕдиницаОтчета | Object / String | Одиниця для звітності |\n| residue_storage_unit | ЕдиницаХраненияОстатков | Object / String | Одиниця зберігання |\n| unit_measurement_places | ЕдиницаМест | Object / String | Одиниця місць |\n| by_classifier | КодУКТВЭД | String | Код класифікатора |\n| vat | СтавкаНДС | String | Напр., НДС20 |\n| vendor_code | Артикул | String | Артикул виробника |\n| type_nomenclature | ВидНоменклатуры | Object | Вид номенклатури |\n| accounting_by_series | УчетПоСериям | Boolean | Облік по серіях |\n| НоменклатураГТД | НоменклатураГТД | Object / String | Посилання на ГТД |\n| ДатаУКТВЭД | ДатаУКТВЭД | String (DateTime) | Формат dd.MM.yyyy HH:mm:ss |",
+                    "operationId": "apiMethodsPostGoods",
+                    "requestBody": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "Об'єкт з ключем `goods` (масив). Структура полів — у таблиці вище."
+                                },
+                                "example": {
+                                    "goods": [
+                                        {
+                                            "id": {"ТипЗнчачения": "Справочник.Номенклатура","Значение": "f293249d-af97-11e5-843a-000c2942d205"},
+                                            "name": "Колгейт",
+                                            "is_group": true,
+                                            "code": "УТ000042251",
+                                            "group_id": {"ТипЗнчачения": "Справочник.Номенклатура","Значение": "00000000-0000-0000-0000-000000000000"},
+                                            "unit_for_reporting": "",
+                                            "residue_storage_unit": "",
+                                            "by_classifier": "",
+                                            "unit_measurement_places": "",
+                                            "vat": "",
+                                            "vendor_code": "",
+                                            "type_nomenclature": {"ТипЗнчачения": "Справочник.ВидыНоменклатуры","Значение": "00000000-0000-0000-0000-000000000000"},
+                                            "accounting_by_series": "",
+                                            "НоменклатураГТД": "",
+                                            "ДатаУКТВЭД": "",
+                                            "ПометкаУдаления": false
+                                        },
+                                        {
+                                            "id": {"ТипЗнчачения": "Справочник.Номенклатура","Значение": "c21999ec-5493-11ed-99b7-0050569d7099"},
+                                            "name": "Стікера",
+                                            "is_group": true,
+                                            "code": "УТРА0094610",
+                                            "group_id": {"ТипЗнчачения": "Справочник.Номенклатура","Значение": "f293249d-af97-11e5-843a-000c2942d205"},
+                                            "unit_for_reporting": "",
+                                            "residue_storage_unit": "",
+                                            "by_classifier": "",
+                                            "unit_measurement_places": "",
+                                            "vat": "",
+                                            "vendor_code": "",
+                                            "type_nomenclature": {"ТипЗнчачения": "Справочник.ВидыНоменклатуры","Значение": "d051cc92-caf9-11e0-abc3-0018f368a54e"},
+                                            "accounting_by_series": "",
+                                            "НоменклатураГТД": "",
+                                            "ДатаУКТВЭД": "",
+                                            "ПометкаУдаления": false
+                                        },
+                                        {
+                                            "id": {"ТипЗнчачения": "Справочник.Номенклатура","Значение": "26e40a9d-5b74-11ed-9401-0050569d7099"},
+                                            "name": "Зубні пасти не партійні",
+                                            "is_group": true,
+                                            "code": "УТРА0094751",
+                                            "group_id": {"ТипЗнчачения": "Справочник.Номенклатура","Значение": "c21999ec-5493-11ed-99b7-0050569d7099"},
+                                            "unit_for_reporting": "",
+                                            "residue_storage_unit": "",
+                                            "by_classifier": "",
+                                            "unit_measurement_places": "",
+                                            "vat": "",
+                                            "vendor_code": "",
+                                            "type_nomenclature": {"ТипЗнчачения": "Справочник.ВидыНоменклатуры","Значение": "d051cc92-caf9-11e0-abc3-0018f368a54e"},
+                                            "accounting_by_series": "",
+                                            "НоменклатураГТД": "",
+                                            "ДатаУКТВЭД": "",
+                                            "ПометкаУдаления": false
+                                        },
+                                        {
+                                            "id": {"ТипЗнчачения": "Справочник.Номенклатура","Значение": "17cf77f2-026c-11f1-a2ab-00505685ce63"},
+                                            "name": "Стікер Colgate ЗП 125мл Макс Блиск Кришталева м'ята",
+                                            "is_group": false,
+                                            "code": "УТРА0107444",
+                                            "group_id": {"ТипЗнчачения": "Справочник.Номенклатура","Значение": "26e40a9d-5b74-11ed-9401-0050569d7099"},
+                                            "unit_for_reporting": {"ТипЗнчачения": "Справочник.ЕдиницыИзмерения","Значение": "17cf77f3-026c-11f1-a2ab-00505685ce63"},
+                                            "residue_storage_unit": {"ТипЗнчачения": "Справочник.ЕдиницыИзмерения","Значение": "17cf77f3-026c-11f1-a2ab-00505685ce63"},
+                                            "by_classifier": "2009",
+                                            "unit_measurement_places": {"ТипЗнчачения": "Справочник.ЕдиницыИзмерения","Значение": "17cf77f3-026c-11f1-a2ab-00505685ce63"},
+                                            "vat": "НДС20",
+                                            "vendor_code": "61049709/61054188-st",
+                                            "type_nomenclature": {"ТипЗнчачения": "Справочник.ВидыНоменклатуры","Значение": "d051cc92-caf9-11e0-abc3-0018f368a54e"},
+                                            "accounting_by_series": false,
+                                            "НоменклатураГТД": {"ТипЗнчачения": "Справочник.НоменклатураГТД","Значение": "00000000-0000-0000-0000-000000000000"},
+                                            "ДатаУКТВЭД": "01.04.2025 00:00:00",
+                                            "ПометкаУдаления": false
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Результат обробки",
+                            "content": {
+                                "application/json": {
+                                    "schema": { "$ref": "#/components/schemas/ApiResponse" },
+                                    "example": {
+                                        "Result": true,
+                                        "Errors": [],
+                                        "Data": {},
+                                        "Loaded": ["a1c69639-026d-11f1-a2ab-00505685ce63", "a1c6963a-026d-11f1-a2ab-00505685ce63"]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            // --- POST /v1: Одиниці виміру (units_of_measure) ---
+            "/v1 ": {
+                "post": {
+                    "tags": ["Обмін даними"],
+                    "summary": "POST /v1 — Одиниці виміру",
+                    "description": "Тіло запиту — об'єкт з ключем `units_of_measure` (масив елементів одиниць виміру).\n\n**Об'єкт обміну:** одиниці виміру (тег `units_of_measure`). Справочник.ЕдиницыИзмерения.\n\n**Опис полів:**\n\n| JSON-поле | Реквізит 1С | Тип | Опис |\n|-----------|-------------|-----|------|\n| id | Ссылка | Object | Посилання на довідник ЕдиницыИзмерения |\n| name | Наименование | String | Найменування (наприклад, шт) |\n| weight | Вес | Number | Вага для одиниці виміру |\n| size | Объем | Number | Об'єм / розмір |\n| coefficient | Коэффициент | Number | Коефіцієнт перерахунку |\n| by_classifier | КодКлассификатора | String | Код класифікатора |\n| goods_id | Номенклатура | Object | Посилання на номенклатуру |\n| code | Код | String | Код одиниці виміру |\n| ПометкаУдаления | ПометкаУдаления | Boolean | Ознака видалення |",
+                    "operationId": "apiMethodsPostUnits",
+                    "requestBody": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "Об'єкт з ключем `units_of_measure` (масив). Структура полів — у таблиці вище."
+                                },
+                                "example": {
+                                    "units_of_measure": [
+                                        {
+                                            "id": {"ТипЗнчачения": "Справочник.ЕдиницыИзмерения","Значение": "18eb774e-01b6-11f1-a2ab-00505685ce63"},
+                                            "name": "шт",
+                                            "weight": 0,"size": 0,"coefficient": 1,
+                                            "by_classifier": "2009",
+                                            "goods_id": {"ТипЗнчачения": "Справочник.Номенклатура","Значение": "18eb774d-01b6-11f1-a2ab-00505685ce63"},
+                                            "code": "УТ0206979",
+                                            "ПометкаУдаления": false
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Результат обробки",
+                            "content": {
+                                "application/json": {
+                                    "schema": { "$ref": "#/components/schemas/ApiResponse" },
+                                    "example": {
+                                        "Result": true,
+                                        "Errors": [],
+                                        "Data": {},
+                                        "Loaded": ["a1c69639-026d-11f1-a2ab-00505685ce63", "a1c6963a-026d-11f1-a2ab-00505685ce63"]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            // --- POST /v1: Штрихкоди (barcodes) ---
+            "/v1  ": {
+                "post": {
+                    "tags": ["Обмін даними"],
+                    "summary": "POST /v1 — Штрихкоди",
+                    "description": "Тіло запиту — об'єкт з ключем `barcodes` (масив штрихкодів). Ендпоінт: POST /v1.\n\n**Об'єкт обміну:** штрихкоди (тег `barcodes`).\n\n**Опис полів:**\n\n| JSON-поле | Реквізит 1С | Тип | Опис |\n|-----------|-------------|-----|------|\n| goods_id | Номенклатура | Object | Посилання на номенклатуру |\n| ТипШтрихкода | ТипШтрихкода | String | Тип штрихкода (наприклад, Code128) |\n| barcode | Штрихкод | String | Значення штрихкода |\n| units_of_measure_id | ЕдиницаИзмерения | Object | Посилання на одиницю виміру |\n| ТипШтрихкода2 | ТипШтрихкода2 | String | Додатковий тип штрихкода |\n| ХарактеристикаНоменклатуры | ХарактеристикаНоменклатуры | Object | Посилання на характеристику (GUID або 00000000-0000-0000-0000-000000000000) |\n| ПредставлениеШтрихкода | Представление | String | Представлення штрихкода (якщо використовується) |",
+                    "operationId": "apiMethodsPostBarcodes",
+                    "requestBody": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "Об'єкт з ключем `barcodes` (масив). Структура полів — у таблиці вище."
+                                },
+                                "example": {
+                                    "barcodes": [
+                                        {
+                                            "goods_id": { "ТипЗнчачения": "Справочник.Номенклатура", "Значение": "17cf77f6-026c-11f1-a2ab-00505685ce63" },
+                                            "ТипШтрихкода": "Code128",
+                                            "barcode": "8718951312173-st",
+                                            "units_of_measure_id": { "ТипЗнчачения": "Справочник.ЕдиницыИзмерения", "Значение": "17cf77f7-026c-11f1-a2ab-00505685ce63" },
+                                            "ТипШтрихкода2": "Code128",
+                                            "ХарактеристикаНоменклатуры": { "ТипЗнчачения": "Справочник.ХарактеристикиНоменклатуры", "Значение": "00000000-0000-0000-0000-000000000000" },
+                                            "ПредставлениеШтрихкода": ""
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Результат обробки",
+                            "content": {
+                                "application/json": {
+                                    "schema": { "$ref": "#/components/schemas/ApiResponse" },
+                                    "example": { "Result": true, "Errors": [], "Data": {}, "Loaded": [] }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        // ---------- Компоненти: безпека та схеми ----------
+        "components": {
+            // --- Схеми авторизації (X-Auth-Token, Basic) ---
+            "securitySchemes": {
+                "Token": {
+                    "type": "apiKey",
+                    "in": "header",
+                    "name": "X-Auth-Token",
+                    "description": "Токен доступу у заголовку X-Auth-Token. Видається окремо."
+                },
+                "BasicAuth": {
+                    "type": "http",
+                    "scheme": "basic",
+                    "description": "HTTP Basic Auth: логін + пароль (Base64). Видаються окремо."
+                }
+            },
+            // --- Схеми даних (відповіді та елементи обміну) ---
+            "schemas": {
+                // Схема відповіді API: Result, Errors, Data, Loaded
+                "ApiResponse": {
+                    "type": "object",
+                    "properties": {
+                        "Result": { "type": "boolean", "description": "true — успіх, false — є помилки" },
+                        "Errors": { "type": "array", "items": { "type": "string" }, "description": "Список повідомлень про помилки" },
+                        "Data": {
+                            "type": "object",
+                            "description": "Для GET — об'єкт з тегами та масивами. Див. GoodsItem, UnitsOfMeasureItem.",
+                            "properties": {
+                                "goods": { "type": "array", "items": { "$ref": "#/components/schemas/GoodsItem" } },
+                                "units_of_measure": { "type": "array", "items": { "$ref": "#/components/schemas/UnitsOfMeasureItem" } }
+                            },
+                            "additionalProperties": { "type": "array", "items": { "type": "object" } }
+                        },
+                        "Loaded": { "type": "array", "items": { "type": "string" }, "description": "Список збережених посилань (для POST)" }
+                    }
+                },
+                // Тіло POST /v1 (загальний опис тегів)
+                "DataRequest": {
+                    "type": "object",
+                    "description": "Тіло POST /v1. Ключі — теги (goods, units_of_measure, warehouses, customer_order…). Значення — масиви елементів. Посилання — об'єкт TypedValue або \"\".",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/EntityItem" }
+                    }
+                },
+                // Формат посилання 1С: ТипЗнчачения + Значение (UUID)
+                "TypedValue": {
+                    "type": "object",
+                    "description": "Формат значення з посиланням на тип 1С. Для полів id, group_id, unit_for_reporting тощо.",
+                    "properties": {
+                        "ТипЗнчачения": { "type": "string", "example": "Справочник.Номенклатура" },
+                        "Значение": { "type": "string", "example": "f293249d-af97-11e5-843a-000c2942d205" }
+                    }
+                },
+                // Базовий елемент обміну (посилання на GoodsItem, UnitsOfMeasureItem)
+                "EntityItem": {
+                    "type": "object",
+                    "description": "Елемент об'єкта обміну. Посилання — TypedValue або \"\". Детально — схеми GoodsItem, UnitsOfMeasureItem.",
+                    "properties": {
+                        "id": {
+                            "oneOf": [{ "$ref": "#/components/schemas/TypedValue" },{ "type": "string" }],
+                            "description": "Унікальний ідентифікатор"
+                        }
+                    },
+                    "additionalProperties": true
+                },
+                // Схема елемента номенклатури (тег goods)
+                "GoodsItem": {
+                    "type": "object",
+                    "description": "**Об'єкт обміну:** номенклатура (тег `goods`). Справочник.Номенклатура.\n\n**Опис полів:**\n\n| JSON-поле | Реквізит 1С | Тип | Опис |\n|-----------|-------------|-----|------|\n| id | Ссылка | Object | Посилання на елемент довідника Номенклатура |\n| name | Наименование | String | Найменування номенклатури |\n| code | Код | String | Код номенклатури |\n| is_group | ЭтоГруппа | Boolean | true — група, false — елемент |\n| ПометкаУдаления | ПометкаУдаления | Boolean | Ознака видалення |\n| group_id | Родитель | Object | Батьківська група (для кореня — 00000000-0000-0000-0000-000000000000) |\n| unit_for_reporting | ЕдиницаОтчета | Object / String | Одиниця для звітності |\n| residue_storage_unit | ЕдиницаХраненияОстатков | Object / String | Одиниця зберігання |\n| unit_measurement_places | ЕдиницаМест | Object / String | Одиниця місць |\n| by_classifier | КодУКТВЭД | String | Код класифікатора |\n| vat | СтавкаНДС | String | Напр., НДС20 |\n| vendor_code | Артикул | String | Артикул виробника |\n| type_nomenclature | ВидНоменклатуры | Object | Вид номенклатури |\n| accounting_by_series | УчетПоСериям | Boolean | Облік по серіях |\n| НоменклатураГТД | НоменклатураГТД | Object / String | Посилання на ГТД |\n| ДатаУКТВЭД | ДатаУКТВЭД | String (DateTime) | Формат dd.MM.yyyy HH:mm:ss |",
+                    "properties": {
+                        "id": { "oneOf": [{ "$ref": "#/components/schemas/TypedValue" },{ "type": "string" }], "description": "Посилання на елемент довідника Номенклатура (Object: ТипЗнчачения, Значение). GUID елемента." },
+                        "name": { "type": "string", "description": "Наименование. Найменування номенклатури." },
+                        "is_group": { "type": "boolean", "description": "ЭтоГруппа. true — група, false — елемент." },
+                        "code": { "type": "string", "description": "Код. Код номенклатури." },
+                        "ПометкаУдаления": { "type": "boolean", "description": "ПометкаУдаления. Ознака видалення." },
+                        "group_id": { "oneOf": [{ "$ref": "#/components/schemas/TypedValue" },{ "type": "string" }], "description": "Родитель. Батьківська група. GUID батьківської групи (для кореня — 00000000-0000-0000-0000-000000000000)." },
+                        "unit_for_reporting": { "oneOf": [{ "$ref": "#/components/schemas/TypedValue" },{ "type": "string" }], "description": "ЕдиницаОтчета. Одиниця для звітності." },
+                        "residue_storage_unit": { "oneOf": [{ "$ref": "#/components/schemas/TypedValue" },{ "type": "string" }], "description": "ЕдиницаХраненияОстатков. Одиниця зберігання." },
+                        "unit_measurement_places": { "oneOf": [{ "$ref": "#/components/schemas/TypedValue" },{ "type": "string" }], "description": "ЕдиницаМест. Одиниця місць." },
+                        "by_classifier": { "type": "string", "description": "КодУКТВЭД. Код класифікатора." },
+                        "vat": { "type": "string", "description": "СтавкаНДС. Напр., НДС20." },
+                        "vendor_code": { "type": "string", "description": "Артикул. Артикул виробника." },
+                        "type_nomenclature": { "oneOf": [{ "$ref": "#/components/schemas/TypedValue" },{ "type": "string" }], "description": "ВидНоменклатуры. Вид номенклатури. GUID виду номенклатури." },
+                        "accounting_by_series": { "oneOf": [{ "type": "boolean" },{ "type": "string" }], "description": "УчетПоСериям. Облік по серіях." },
+                        "НоменклатураГТД": { "oneOf": [{ "$ref": "#/components/schemas/TypedValue" },{ "type": "string" }], "description": "НоменклатураГТД. Посилання на ГТД." },
+                        "ДатаУКТВЭД": { "type": "string", "description": "ДатаУКТВЭД. Формат dd.MM.yyyy HH:mm:ss." }
+                    }
+                },
+                // Схема елемента одиниці виміру (тег units_of_measure)
+                "UnitsOfMeasureItem": {
+                    "type": "object",
+                    "description": "**Об'єкт обміну:** одиниці виміру (тег `units_of_measure`). Справочник.ЕдиницыИзмерения.\n\n| JSON-поле | Реквізит 1С | Тип | Опис |\n|-----------|-------------|-----|------|\n| id | Ссылка | Object | Посилання на довідник ЕдиницыИзмерения |\n| name | Наименование | String | Найменування (наприклад, шт) |\n| weight | Вес | Number | Вага для одиниці виміру |\n| size | Объем | Number | Об'єм / розмір |\n| coefficient | Коэффициент | Number | Коефіцієнт перерахунку |\n| by_classifier | КодКлассификатора | String | Код класифікатора |\n| goods_id | Номенклатура | Object | Посилання на номенклатуру |\n| code | Код | String | Код одиниці виміру |\n| ПометкаУдаления | ПометкаУдаления | Boolean | Ознака видалення |",
+                    "properties": {
+                        "id": { "oneOf": [{ "$ref": "#/components/schemas/TypedValue" },{ "type": "string" }], "description": "Ссылка. Посилання на довідник ЕдиницыИзмерения (Object: ТипЗнчачения, Значение). GUID одиниці виміру." },
+                        "name": { "type": "string", "description": "Наименование. Найменування (наприклад, шт)." },
+                        "weight": { "type": "number", "description": "Вес. Вага для одиниці виміру." },
+                        "size": { "type": "number", "description": "Объем. Об'єм / розмір." },
+                        "coefficient": { "type": "number", "description": "Коэффициент. Коефіцієнт перерахунку." },
+                        "by_classifier": { "type": "string", "description": "КодКлассификатора. Код класифікатора." },
+                        "goods_id": { "oneOf": [{ "$ref": "#/components/schemas/TypedValue" },{ "type": "string" }], "description": "Номенклатура. Посилання на номенклатуру. GUID номенклатури." },
+                        "code": { "type": "string", "description": "Код. Код одиниці виміру." },
+                        "ПометкаУдаления": { "type": "boolean", "description": "ПометкаУдаления. Ознака видалення." }
+                    }
+                },
+                // Схема елемента штрихкоду (тег barcodes)
+                "BarcodeItem": {
+                    "type": "object",
+                    "description": "**Об'єкт обміну:** штрихкоди (тег `barcodes`).\n\n| JSON-поле | Реквізит 1С | Тип | Опис |\n|-----------|-------------|-----|------|\n| goods_id | Номенклатура | Object | Посилання на номенклатуру |\n| ТипШтрихкода | ТипШтрихкода | String | Тип штрихкода (наприклад, Code128) |\n| barcode | Штрихкод | String | Значення штрихкода |\n| units_of_measure_id | ЕдиницаИзмерения | Object | Посилання на одиницю виміру |\n| ТипШтрихкода2 | ТипШтрихкода2 | String | Додатковий тип штрихкода |\n| ХарактеристикаНоменклатуры | ХарактеристикаНоменклатуры | Object | Посилання на характеристику (GUID або 00000000-0000-0000-0000-000000000000) |\n| ПредставлениеШтрихкода | Представление | String | Представлення штрихкода (якщо використовується) |",
+                    "properties": {
+                        "goods_id": { "oneOf": [{ "$ref": "#/components/schemas/TypedValue" },{ "type": "string" }], "description": "Номенклатура. Посилання на номенклатуру." },
+                        "ТипШтрихкода": { "type": "string", "description": "ТипШтрихкода. Тип штрихкода (наприклад, Code128)." },
+                        "barcode": { "type": "string", "description": "Штрихкод. Значення штрихкода." },
+                        "units_of_measure_id": { "oneOf": [{ "$ref": "#/components/schemas/TypedValue" },{ "type": "string" }], "description": "ЕдиницаИзмерения. Посилання на одиницю виміру." },
+                        "ТипШтрихкода2": { "type": "string", "description": "ТипШтрихкода2. Додатковий тип штрихкода." },
+                        "ХарактеристикаНоменклатуры": { "oneOf": [{ "$ref": "#/components/schemas/TypedValue" },{ "type": "string" }], "description": "ХарактеристикаНоменклатуры. Посилання на характеристику номенклатури. GUID характеристики (або 00000000-0000-0000-0000-000000000000)." },
+                        "ПредставлениеШтрихкода": { "type": "string", "description": "Представление. Представлення штрихкода (якщо використовується)." }
+                    }
+                }
+            }
+        }
+    };
+    // Ініціалізація ReDoc з OpenAPI-спекою
+    Redoc.init(spec, {hideDownloadButton: true, jsonSampleExpandLevel: 15}, document.getElementById('redoc-container'));
+})();
+    </script>
+</body>
+</html>
