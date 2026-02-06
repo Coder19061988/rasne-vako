@@ -35,9 +35,17 @@
 </head>
 <body>
     <div id="redoc-container"></div>
+    <p id="spec-source" style="margin: 0.5rem 1rem; font-size: 0.85rem; color: #666;"></p>
     <script>
 (function () {
-    // ---------- Base URL API (одне місце для зміни) ----------
+    // ---------- URL специфікації: з файлу (оновлення з репо) або вбудована ----------
+    // Можна задати через ?spec=... у посиланні, інакше використовується openapi.json поруч зі сторінкою
+    var SPEC_URL = (function () {
+        var p = new URLSearchParams(window.location.search);
+        return p.get('spec') || 'openapi.json';
+    })();
+
+    // ---------- Base URL API (для вбудованої специфікації та експорту) ----------
     var URL_DEV  = "https://wms.bhb.org.ua/rasne-dev/hs/3plrasneapi";
     var URL_PROD = "https://тут.буде.сервер/rasne-prod/hs/3plrasneapi";
 
@@ -404,8 +412,36 @@
             }
         }
     };
-    // Ініціалізація ReDoc з OpenAPI-спекою
-    Redoc.init(spec, {hideDownloadButton: true, jsonSampleExpandLevel: 15}, document.getElementById('redoc-container'));
+
+    var redocOpts = { hideDownloadButton: false, jsonSampleExpandLevel: 15 };
+    var container = document.getElementById('redoc-container');
+    var sourceEl = document.getElementById('spec-source');
+
+    var currentSpec;
+    function initRedoc(specToUse, sourceLabel) {
+        currentSpec = specToUse;
+        if (sourceLabel) {
+            sourceEl.textContent = sourceLabel;
+            sourceEl.innerHTML += ' — <a href="#" id="export-spec-link">Завантажити openapi.json</a>';
+            document.getElementById('export-spec-link').onclick = function (e) {
+                e.preventDefault();
+                var a = document.createElement('a');
+                a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(currentSpec, null, 2));
+                a.download = 'openapi.json';
+                a.click();
+            };
+        }
+        Redoc.init(specToUse, redocOpts, container);
+    }
+
+    fetch(SPEC_URL)
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (loadedSpec) {
+            initRedoc(loadedSpec, 'Специфікація завантажена з ' + SPEC_URL);
+        })
+        .catch(function () {
+            initRedoc(spec, 'Використовується вбудована специфікація (openapi.json не знайдено або недоступний)');
+        });
 })();
     </script>
 </body>
