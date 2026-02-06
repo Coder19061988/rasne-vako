@@ -17,7 +17,7 @@
   "tags": [
     {
       "name": "Аутентифікація",
-      "description": "**Авторизація**\n\n- **Base URL:** https://тут.буде.сервер/rasne-prod/hs/3plrasneapi\n- **HTTP Basic Auth:** — логін і пароль (кодування Base64).\n- **Токен доступу** — у заголовку `X-Auth-Token`.\n\n**Приклад HTTP-заголовків:**\n- `Content-Type: application/json`\n- `Authorization: Basic <base64(логін:пароль)>`\n- `X-Auth-Token: <токен>`\n\n**Перевірка доступності:** запит GET /ping (авторизація не потрібна), у відповідь — рядок `pong`."
+      "description": "**Авторизація**\n\n- **Base URL:** https://тут.буде.сервер/rasne-prod/hs/3plrasneapi\n- **HTTP Basic Auth:** — логін і пароль (кодування Base64).\n- **Токен доступу** — у заголовку `Token`.\n\n**Приклад HTTP-заголовків:**\n- `Content-Type: application/json`\n- `Authorization: Basic <base64(логін:пароль)>`\n- `Token: <токен>`\n\n**Перевірка доступності:** запит GET /ping (авторизація не потрібна), у відповідь — рядок `pong`."
     },
     {
       "name": "Обмін даними",
