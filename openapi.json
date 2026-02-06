@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "https://wms.bhb.org.ua/rasne-dev/hs/3plrasneapi",
+      "url": "https://тут.буде.сервер/rasne-dev/hs/3plrasneapi",
       "description": "Сервер API (DEV)"
     },
     {
