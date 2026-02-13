@@ -8,29 +8,178 @@
     <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/redoc/bundles/redoc.standalone.js"></script>
     <style>
-        /* Темний стиль для таблиць у документації (опис полів номенклатури, одиниць виміру, штрихкодів) */
+        /* Світлий фон сторінки */
+        body {
+            background: #f5f5f5;
+        }
+        #redoc-container {
+            background: #fff;
+        }
+        /* Світлий стиль для таблиць */
         #redoc-container table {
-            background: #252525;
+            background: #fff;
             border-collapse: collapse;
-            border: 1px solid #444;
-            border-radius: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 18px;
         }
         #redoc-container th,
         #redoc-container td {
-            border: 1px solid #444 !important;
+            border: 1px solid #e0e0e0 !important;
             padding: 8px 12px !important;
         }
         #redoc-container th {
-            background: #1a1a1a !important;
-            color: #fff !important;
+            background: #f5f5f5 !important;
+            color: #333 !important;
             font-weight: 600;
         }
         #redoc-container td {
-            color: #e4e4e4 !important;
-            background: #252525 !important;
+            color: #424242 !important;
+            background: #fff !important;
         }
         #redoc-container tr:hover td {
-            background: #2d2d2d;
+            background: #fafafa;
+        }
+
+        /* Назви полів у схемі */
+        #redoc-container .prop-name,
+        #redoc-container .prop__name,
+        #redoc-container [class*="PropertyName"],
+        #redoc-container .schema-model .bold,
+        #redoc-container .schema-model .prop-name,
+        #redoc-container [aria-label^="expand"] {
+            color: #333 !important;
+        }
+        /* Типи (string, Array, …) — бейдж */
+        #redoc-container .prop-type,
+        #redoc-container .prop__type,
+        #redoc-container [class*="prop-type"],
+        #redoc-container .schema-model .badge,
+        #redoc-container .schema-model span[class*="type"],
+        #redoc-container .sc-fHjqPf {
+            color: #37474f !important;
+            background: #eceff1 !important;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        /* Посилання на схеми */
+        #redoc-container .schema-model a,
+        #redoc-container .schema-model .ref-link {
+            color: #1565c0 !important;
+        }
+        /* Приглушені елементи */
+        #redoc-container .schema-model .text-muted,
+        #redoc-container .schema-model [style*="opacity"] {
+            color: #616161 !important;
+            opacity: 1 !important;
+        }
+
+        /* ——— Блоки "Request Body schema" — картка, заголовок, відступи ——— */
+        #redoc-container div:has(> .schema-model) {
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            margin: 0.75rem 0 1.25rem 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        /* Заголовок "Request Body schema" над блоком схеми */
+        #redoc-container div:has(> .schema-model) > div:first-of-type:not(.schema-model),
+        #redoc-container [class*="Schema"]:has(+ .schema-model),
+        #redoc-container .schema-model-title,
+        #redoc-container [class*="model-box"] > div:first-child {
+            color: #333 !important;
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 0.02em;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        /* Внутрішній відступ самої схеми */
+        #redoc-container div:has(> .schema-model) > .schema-model {
+            margin-top: 0.5rem;
+            padding-left: 0.25rem;
+        }
+        /* Вкладені model-box (oneOf, вкладені об'єкти) — м’який контраст */
+        #redoc-container .schema-model .model-box {
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 0;
+        }
+        #redoc-container .schema-model .model-box-control {
+            color: #616161;
+        }
+
+        /* Блок "One of" */
+        #redoc-container .schema-model [class*="oneOf"],
+        #redoc-container .schema-model [class*="OneOf"],
+        #redoc-container .schema-model [class*="one-of"],
+        #redoc-container .schema-model [class*="discriminator"] {
+            background: #f5f5f5 !important;
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 0;
+            color: #333;
+        }
+        #redoc-container .schema-model [class*="oneOf"] .badge,
+        #redoc-container .schema-model [class*="OneOf"] .badge,
+        #redoc-container .schema-model [class*="oneOf"] [class*="badge"],
+        #redoc-container .schema-model [class*="OneOf"] [class*="badge"] {
+            background: #e3f2fd !important;
+            color: #1565c0 !important;
+            border: 1px solid #90caf9;
+        }
+        /* Заголовок "Array [" */
+        #redoc-container .schema-model [class*="array"] > div:first-child,
+        #redoc-container .schema-model > div[class*="Array"] {
+            background: #f0f0f0 !important;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px 12px 0 0;
+            padding: 0.4rem 0.75rem;
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* ——— Request Body schema (контейнер sc-fqkvVR, таблиця sc-dAbbOL) ——— */
+        #redoc-container div[class*="sc-fqkvVR"]:has(table[class*="sc-dAbbOL"]) {
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            margin: 0.75rem 0 1.25rem 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        #redoc-container div[class*="sc-fqkvVR"]:has(table[class*="sc-dAbbOL"]) h2,
+        #redoc-container div[class*="sc-fqkvVR"]:has(table[class*="sc-dAbbOL"]) h4,
+        #redoc-container div[class*="sc-fqkvVR"]:has(table[class*="sc-dAbbOL"]) h5 {
+            color: #333 !important;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        #redoc-container table[class*="sc-dAbbOL"] {
+            margin: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fff !important;
+        }
+        #redoc-container table[class*="sc-dAbbOL"] td {
+            padding: 10px 14px !important;
+            background: #fff !important;
+            color: #424242 !important;
+            border-color: #e0e0e0 !important;
+        }
+
+        /* Блоки коду — тільки заокруглені кути */
+        #redoc-container pre,
+        #redoc-container pre[class*="code"] {
+            border-radius: 12px !important;
         }
     </style>
 </head>
@@ -43,7 +192,8 @@
     // Можна задати через ?spec=... у посиланні, інакше використовується openapi.json поруч зі сторінкою
     var SPEC_URL = (function () {
         var p = new URLSearchParams(window.location.search);
-        return p.get('spec') || 'openapi.json';
+        var base = p.get('spec') || 'openapi.json';
+        return base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
     })();
 
     // Специфікація завантажується тільки з openapi.json (редагуйте той файл, не цей).
