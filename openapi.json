@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "API: Vaco ↔ Rasne",
+    "title": "API: Rasne",
     "version": "1.5"
   },
   "servers": [
