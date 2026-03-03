@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "API: Rasne",
-    "version": "1.5"
+    "version": "1.6"
   },
   "servers": [
     {
