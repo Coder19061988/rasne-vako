@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "API: Rasne",
-    "version": "1.14"
+    "version": "1.15"
   },
   "servers": [
     {
@@ -1145,6 +1145,187 @@
           },
           "401": {
             "description": "Помилка авторизації (Basic / Token)."
+          }
+        }
+      }
+    },
+    "/delivery-np": {
+      "post": {
+        "tags": [
+          "Вивантаження даних"
+        ],
+        "summary": "POST /delivery-np — Дані для формування ТТН Нової Пошти",
+        "description": "Приймає **в HTTP-заголовках** набір даних, необхідних для подальшого формування ТТН у системі Нова Пошта. Сама взаємодія з API Нової Пошти виконується на стороні 1С — цей ендпоінт лише приймає та зберігає вхідні дані.\n\n**Опис заголовків:**\n\n| Заголовок | Опис |\n|-----------|------|\n| `ApiKey` | ID юр.особи (Нова Пошта) |\n| `AccountKey` | ID кабінету (Нова Пошта) |\n| `RecipientWarehouseIndex` | Цифрова адреса відділення або поштомата |\n| `CityRecipient` | ID міста отримувача |\n| `Recipient` | ID контрагента-отримувача |\n| `RecipientAddress` | ID адреси або поштомата отримувача |\n| `ContactRecipient` | ID контактної особи отримувача |\n| `RecipientsPhone` | Телефон отримувача |\n| `PayerType` | Платник: `Sender` / `Recipient` / `ThirdPerson` |\n| `PaymentMethod` | Спосіб оплати: `Cash` / `NonCash` |\n| `ServiceType` | Тип послуги: `DoorsDoors` / `DoorsWarehouse` / `WarehouseWarehouse` / `WarehouseDoors` |\n| `Description` | Опис вантажу |\n| `Cost` | Оціночна вартість |\n\n**Тіло запиту:** відсутнє (усі дані передаються заголовками).",
+        "operationId": "postDeliveryNP",
+        "parameters": [
+          {
+            "name": "ApiKey",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID юр.особи в Новій Пошті."
+          },
+          {
+            "name": "AccountKey",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID кабінету в Новій Пошті."
+          },
+          {
+            "name": "RecipientWarehouseIndex",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Цифрова адреса відділення або поштомата Нової Пошти."
+          },
+          {
+            "name": "CityRecipient",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID міста отримувача (довідник Нової Пошти)."
+          },
+          {
+            "name": "Recipient",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID контрагента-отримувача (довідник Нової Пошти)."
+          },
+          {
+            "name": "RecipientAddress",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID адреси або поштомата отримувача (довідник Нової Пошти)."
+          },
+          {
+            "name": "ContactRecipient",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID контактної особи отримувача (довідник Нової Пошти)."
+          },
+          {
+            "name": "RecipientsPhone",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Телефон отримувача."
+          },
+          {
+            "name": "PayerType",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Sender",
+                "Recipient",
+                "ThirdPerson"
+              ]
+            },
+            "description": "Платник: `Sender` (відправник), `Recipient` (отримувач), `ThirdPerson` (третя особа)."
+          },
+          {
+            "name": "PaymentMethod",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Cash",
+                "NonCash"
+              ]
+            },
+            "description": "Спосіб оплати: `Cash` (готівка), `NonCash` (безготівковий)."
+          },
+          {
+            "name": "ServiceType",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DoorsDoors",
+                "DoorsWarehouse",
+                "WarehouseWarehouse",
+                "WarehouseDoors"
+              ]
+            },
+            "description": "Тип послуги: `DoorsDoors`, `DoorsWarehouse`, `WarehouseWarehouse`, `WarehouseDoors`."
+          },
+          {
+            "name": "Description",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Опис вантажу."
+          },
+          {
+            "name": "Cost",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "number"
+            },
+            "description": "Оціночна вартість вантажу."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Дані успішно прийняті.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                },
+                "example": {
+                  "Result": true,
+                  "Errors": [],
+                  "Data": {},
+                  "Loaded": []
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некоректні або відсутні обов'язкові заголовки. У тілі — опис помилки.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                },
+                "example": {
+                  "Result": false,
+                  "Errors": [
+                    "Не заповнено поле: ApiKey",
+                    "Не заповнено поле: RecipientsPhone"
+                  ],
+                  "Data": {},
+                  "Loaded": []
+                }
+              }
+            }
           }
         }
       }
